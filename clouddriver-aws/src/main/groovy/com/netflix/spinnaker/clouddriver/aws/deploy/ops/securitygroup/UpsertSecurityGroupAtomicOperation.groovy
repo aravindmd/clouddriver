@@ -105,24 +105,6 @@ class UpsertSecurityGroupAtomicOperation implements AtomicOperation<Void> {
     List<IpPermission> ipPermissionsToRemove = existingIpPermissions - ipPermissionsFromDescription.converted
 
     // Converge on the desired final set of security group rules
-    if (ipPermissionsToAdd) {
-      String status = "Permissions added to '${description.name}'"
-      if (ipPermissionsToAdd.size() > MAX_RULES_FOR_STATUS) {
-        status = "$status (${ipPermissionsToAdd.size()} rules added)."
-      } else {
-        status = "$status ($ipPermissionsToAdd)."
-      }
-
-      try {
-        securityGroupUpdater.addIngress(ipPermissionsToAdd)
-        //Update tags to ensure they are consistent with rule changes
-        securityGroupUpdater.updateTags(description)
-        task.updateStatus BASE_PHASE, status
-      } catch (AmazonServiceException e) {
-        task.updateStatus BASE_PHASE, "Error adding ingress to '${description.name}' - ${e.errorMessage}"
-        throw e
-      }
-    }
     if (ipPermissionsToRemove && !description.ingressAppendOnly) {
       String status = "Permissions removed from '${description.name}'"
       if (ipPermissionsToRemove.size() > MAX_RULES_FOR_STATUS) {
@@ -138,6 +120,24 @@ class UpsertSecurityGroupAtomicOperation implements AtomicOperation<Void> {
         task.updateStatus BASE_PHASE, status
       } catch (AmazonServiceException e) {
         task.updateStatus BASE_PHASE, "Error removing ingress from ${description.name}: ${e.errorMessage}"
+        throw e
+      }
+    }
+    if (ipPermissionsToAdd) {
+      String status = "Permissions added to '${description.name}'"
+      if (ipPermissionsToAdd.size() > MAX_RULES_FOR_STATUS) {
+        status = "$status (${ipPermissionsToAdd.size()} rules added)."
+      } else {
+        status = "$status ($ipPermissionsToAdd)."
+      }
+
+      try {
+        securityGroupUpdater.addIngress(ipPermissionsToAdd)
+        //Update tags to ensure they are consistent with rule changes
+        securityGroupUpdater.updateTags(description)
+        task.updateStatus BASE_PHASE, status
+      } catch (AmazonServiceException e) {
+        task.updateStatus BASE_PHASE, "Error adding ingress to '${description.name}' - ${e.errorMessage}"
         throw e
       }
     }

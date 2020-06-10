@@ -42,6 +42,7 @@ class LoadBalancerV2UpsertHandler {
   private static String modifyTargetGroupAttributes(AmazonElasticLoadBalancing loadBalancing, LoadBalancer loadBalancer, TargetGroup targetGroup, UpsertAmazonLoadBalancerV2Description.Attributes attributes) {
     return modifyTargetGroupAttributes(loadBalancing, loadBalancer, targetGroup, attributes, null)
   }
+
   private static String modifyTargetGroupAttributes(AmazonElasticLoadBalancing loadBalancing, LoadBalancer loadBalancer, TargetGroup targetGroup, UpsertAmazonLoadBalancerV2Description.Attributes attributes, DeployDefaults deployDefaults) {
 
     def currentTargetGroupAttributes = loadBalancing.describeTargetGroupAttributes(new DescribeTargetGroupAttributesRequest()
@@ -49,8 +50,7 @@ class LoadBalancerV2UpsertHandler {
 
     def targetGroupAttributes = []
     if (attributes) {
-      if (TargetTypeEnum.Lambda.toString().equalsIgnoreCase(targetGroup.getTargetType()))
-      {
+      if (TargetTypeEnum.Lambda.toString().equalsIgnoreCase(targetGroup.getTargetType())) {
         if (attributes.multiValueHeadersEnabled != null) {
           targetGroupAttributes.add(new TargetGroupAttribute(key: "lambda.multi_value_headers.enabled", value: attributes.multiValueHeadersEnabled))
         }
@@ -81,7 +81,7 @@ class LoadBalancerV2UpsertHandler {
           }
         }
       }
-      }
+    }
 
     try {
       loadBalancing.modifyTargetGroupAttributes(new ModifyTargetGroupAttributesRequest()
@@ -119,15 +119,15 @@ class LoadBalancerV2UpsertHandler {
 
         } else {
           createTargetGroupRequest.withProtocol(targetGroup.protocol)
-          .withPort(targetGroup.port)
-          .withName(targetGroup.name)
-          .withVpcId(loadBalancer.vpcId)
-          .withHealthCheckIntervalSeconds(targetGroup.healthCheckInterval)
-          .withHealthCheckPort(targetGroup.healthCheckPort)
-          .withHealthCheckProtocol(targetGroup.healthCheckProtocol)
-          .withHealthyThresholdCount(targetGroup.healthyThreshold)
-          .withUnhealthyThresholdCount(targetGroup.unhealthyThreshold)
-          .withTargetType(targetGroup.targetType)
+            .withPort(targetGroup.port)
+            .withName(targetGroup.name)
+            .withVpcId(loadBalancer.vpcId)
+            .withHealthCheckIntervalSeconds(targetGroup.healthCheckInterval)
+            .withHealthCheckPort(targetGroup.healthCheckPort)
+            .withHealthCheckProtocol(targetGroup.healthCheckProtocol)
+            .withHealthyThresholdCount(targetGroup.healthyThreshold)
+            .withUnhealthyThresholdCount(targetGroup.unhealthyThreshold)
+            .withTargetType(targetGroup.targetType)
 
           if (targetGroup.healthCheckProtocol in [ProtocolEnum.HTTP, ProtocolEnum.HTTPS]) {
             createTargetGroupRequest
@@ -142,7 +142,7 @@ class LoadBalancerV2UpsertHandler {
             }
           }
         }
-        CreateTargetGroupResult createTargetGroupResult = loadBalancing.createTargetGroup( createTargetGroupRequest )
+        CreateTargetGroupResult createTargetGroupResult = loadBalancing.createTargetGroup(createTargetGroupRequest)
         task.updateStatus BASE_PHASE, status
         createdTargetGroup = createTargetGroupResult.getTargetGroups().get(0)
 
@@ -408,18 +408,22 @@ class LoadBalancerV2UpsertHandler {
 
     // Can't modify the port or protocol of a target group, so if changed, have to delete/recreate
     List<List<TargetGroup>> targetGroupsSplit = existingTargetGroups.split { awsTargetGroup ->
-      (targetGroups.find { it.name == awsTargetGroup.targetGroupName &&
-                            it.port == awsTargetGroup.port &&
-                            it.protocol.toString() == awsTargetGroup.protocol }) == null
+      (targetGroups.find {
+        it.name == awsTargetGroup.targetGroupName &&
+          it.port == awsTargetGroup.port &&
+          it.protocol.toString() == awsTargetGroup.protocol
+      }) == null
     }
     List<TargetGroup> targetGroupsToRemove = targetGroupsSplit[0]
     List<TargetGroup> targetGroupsToUpdate = targetGroupsSplit[1]
 
     List<String> targetGroupArnsToRemove = targetGroupsToRemove.collect { it.targetGroupArn }
     List<UpsertAmazonLoadBalancerV2Description.TargetGroup> targetGroupsToCreate = targetGroups.findAll { targetGroup ->
-      (existingTargetGroups.find { targetGroup.name == it.targetGroupName &&
-        targetGroup.port == it.port &&
-        targetGroup.protocol.toString() == it.protocol }) == null
+      (existingTargetGroups.find {
+        targetGroup.name == it.targetGroupName &&
+          targetGroup.port == it.port &&
+          targetGroup.protocol.toString() == it.protocol
+      }) == null
     }
 
     // Find and remove all listeners associated with removed target groups and remove them from existingListeners
@@ -478,7 +482,7 @@ class LoadBalancerV2UpsertHandler {
 
     // Update listeners
     listenersToUpdate.each { listener ->
-      UpsertAmazonLoadBalancerV2Description.Listener updatedListener = listeners.find {it.port == listener.port }
+      UpsertAmazonLoadBalancerV2Description.Listener updatedListener = listeners.find { it.port == listener.port }
       updateListener(listener.listenerArn,
         updatedListener,
         listenerToDefaultActions.get(updatedListener),

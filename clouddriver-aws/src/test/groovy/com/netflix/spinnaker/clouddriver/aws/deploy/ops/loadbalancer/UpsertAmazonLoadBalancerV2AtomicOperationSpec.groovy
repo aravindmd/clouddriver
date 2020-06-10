@@ -16,14 +16,10 @@
 
 package com.netflix.spinnaker.clouddriver.aws.deploy.ops.loadbalancer
 
-import com.amazonaws.services.ec2.model.IpPermission
-import com.amazonaws.services.ec2.model.SecurityGroup
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancing
 import com.amazonaws.services.elasticloadbalancingv2.model.*
 import com.amazonaws.services.shield.AWSShield
 import com.amazonaws.services.shield.model.CreateProtectionRequest
-import com.netflix.spinnaker.clouddriver.aws.deploy.ops.securitygroup.SecurityGroupLookupFactory
-import com.netflix.spinnaker.clouddriver.aws.model.edda.TargetGroupAttributes
 import com.netflix.spinnaker.config.AwsConfiguration
 import com.netflix.spinnaker.clouddriver.aws.TestCredential
 import com.netflix.spinnaker.clouddriver.aws.deploy.description.UpsertAmazonLoadBalancerV2Description

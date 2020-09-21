@@ -78,31 +78,25 @@ abstract class AbstractEnableDisableAtomicOperation implements AtomicOperation<V
         return true
       }
 
-      task.updateStatus phaseName, "${presentParticipling} ServerGroup '$serverGroupName' in $region..."
-
-      //TODO , only when disable% is not provided or when disable % is set and its set to 100%
-      if(disable && description.desiredPercentage) {
-        if(description.desiredPercentage == 100 ) {
-          //call to disable
-          log.info("Calling disable since % 100%")
-          activateJob(provider, job, !disable)
-        }
-        else {
-          //do nothing
-          log.info("Not calling disable since % is not 100%")
-        }
-      }
-      else {
-        activateJob(provider, job, !disable)
-      }
-
-
       //IF LB and TG is present and desiredPercentage is present -> throw error
-      //De-registering specific tasks from an ALB is currently not supported for Titus
-
-      if(disable && description.desiredPercentage && loadBalancingClient && job.labels.containsKey("spinnaker.targetGroups")) {
+      //De-registering specific tasks from an ALB is currently not supported for Titu
+      if (disable && description.desiredPercentage && loadBalancingClient && job.labels.containsKey("spinnaker.targetGroups")) {
         log.error("Could not ${verb} ServerGroup '$serverGroupName' in region $region! disabling by percentage for Server Groups with Target Groups is not supported for Titus")
         return false
+      }
+
+      task.updateStatus phaseName, "${presentParticipling} ServerGroup '$serverGroupName' in $region..."
+
+      // If desired percentage is part of the description ( Monitored deploy ), Disable the job only when it's set to 100
+      if (disable && description.desiredPercentage) {
+        if (description.desiredPercentage == 100) {
+          log.info("Calling disable job for desiredPercentage ${description.desiredPercentage}")
+          activateJob(provider, job, !disable)
+        } else {
+          log.info("Not disabling the job for desiredPrecentage ${description.desiredPercentage}")
+        }
+      } else {
+        activateJob(provider, job, !disable)
       }
 
       if (loadBalancingClient && job.labels.containsKey("spinnaker.targetGroups")) {
@@ -136,7 +130,7 @@ abstract class AbstractEnableDisableAtomicOperation implements AtomicOperation<V
         )
         if (description.desiredPercentage && disable) {
           tasks = discoverySupport.getInstanceToModify(credentials.name, region, serverGroupName, job.tasks*.instanceId, description.desiredPercentage)
-          task.updateStatus phaseName, "Only disabling instances $tasks on ASG $serverGroupName with percentage ${description.desiredPercentage}"
+          task.updateStatus phaseName, "Disabling instances $tasks on ASG $serverGroupName with percentage ${description.desiredPercentage}"
         }
         discoverySupport.updateDiscoveryStatusForInstances(
           enableDisableInstanceDiscoveryDescription, task, phaseName, status, tasks
